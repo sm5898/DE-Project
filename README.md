@@ -11,3 +11,9 @@ Project Repo Structure
 requirements.txt - Python dependencies
 
 README.md      - Project documentation
+
+
+TO DO:
+- Stamp panel for each restaurant DESIGN
+- Color palete
+- 
