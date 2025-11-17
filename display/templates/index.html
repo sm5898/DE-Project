@@ -2,68 +2,279 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CleanBite | Restaurant Data</title>
+    <title>CleanBite | Map Dashboard</title>
+    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        /* General layout styles */
+        body { background-color: #f7f7f7; }
+        .main-container-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        /* Map area definition: Placeholder styles */
+        #map-placeholder {
+            height: 800px; 
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #e9e9e9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #6c757d;
+            border: 2px dashed #ccc;
+        }
+        
+        /* SCROLLABLE BUTTONS CONTAINER STYLES */
+        .filter-scroll-container {
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .filter-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        .filter-no-wrap {
+            flex-wrap: nowrap !important;
+        }
+        .quick-filter-button {
+            border-radius: 20px;
+            font-weight: 600;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+            margin-right: 8px;
+            text-decoration: none;
+            display: inline-block;
+            flex-shrink: 0;
+            white-space: nowrap;
+            
+            /* --- UNIFORM NEUTRAL BUTTON STYLE (BASE) --- */
+            background-color: #f8f9fa; /* Light Gray Background */
+            color: #6c757d; /* Dark Gray Text */
+            border: 1px solid #ced4da; /* Light Border */
+            transition: all 0.2s ease;
+        }
+
+        .quick-filter-button:hover {
+            /* --- DARKER HOVER COLOR --- */
+            background-color: #dee2e6; /* Medium Gray on hover */
+            color: #495057;
+            border-color: #adb5bd;
+        }
+
+        /* --- ACTIVE FILTER STYLE (HIGHLIGHT) --- */
+        .filter-active {
+            background-color: #007bff; /* Primary Blue */
+            color: white; /* White Text */
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.5); /* Blue glow */
+        }
+        
+        /* *** RESTAURANT CARD STYLES *** */
+        .restaurant-card { 
+            margin-bottom: 12px; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            height: 120px; 
+            display: flex; 
+            align-items: center;
+        }
+        
+        /* IMAGE AND BANNER STYLES */
+        .grade-banner {
+            height: 100px; 
+            width: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 0;
+            padding: 0; 
+            background: none;
+        }
+        .grade-banner img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; 
+        }
+        
+        /* Text prominence */
+        .card-title-dba {
+            font-size: 1.2rem; 
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        /* Alignment */
+        .restaurant-row {
+            width: 100%;
+            margin: 0;
+            align-items: center; 
+        }
+
+        .card-body-centered {
+            display: flex;
+            flex-direction: column;
+            justify-content: center; 
+            height: 100%; 
+            padding-top: 0; 
+            padding-bottom: 0; 
+        }
+    </style>
 </head>
-<body class="bg-light">
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="/">CleanBite</a>
-        <div>
-          <a class="nav-link text-light" href="/restaurants">View Restaurants</a>
+<body>
+    <header class="container-fluid bg-white p-3 mb-4 border-bottom">
+        <div class="d-flex justify-content-between align-items-center container">
+            <h1 class="h3 mb-0">CleanBite <small class="text-muted">Dashboard</small></h1>
+            <a href="/restaurants" class="btn btn-outline-secondary">Clear All Filters</a>
         </div>
-      </div>
-    </nav>
+    </header>
 
-    <!-- Main Content -->
-    <div class="container mt-5">
-        <h2 class="text-center mb-4">NYC Restaurant Hygiene Data</h2>
+    <div class="container main-container-box">
+        <div class="row">
+            
+            <!-- Map Placeholder Area (7 columns) -->
+            <div class="col-md-7">
+                <div id="map-placeholder">
+                    **Map Area Placeholder (col-md-7)**
+                </div>
+            </div>
 
-        <!-- Filter Form -->
-        <form class="row mb-4" method="get">
+            <!-- Filters and List Area (5 columns) -->
             <div class="col-md-5">
-                <input type="text" name="borough" value="{{ borough or '' }}" class="form-control" placeholder="Filter by Borough (e.g. Manhattan)">
-            </div>
-            <div class="col-md-5">
-                <input type="text" name="cuisine" value="{{ cuisine or '' }}" class="form-control" placeholder="Filter by Cuisine (e.g. Chinese)">
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Filter</button>
-            </div>
-        </form>
 
-        <!-- Data Table -->
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Name</th>
-                        <th>Borough</th>
-                        <th>Cuisine</th>
-                        <th>Grade</th>
-                        <th>Inspection Date</th>
-                        <th>Address</th>
-                    </tr>
-                </thead>
-                <tbody>
+                <h5 class="mt-0 mb-3 text-muted">Quick Search</h5>
+                <form class="mb-4" method="get" action="/restaurants">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="borough" placeholder="Type a Borough (e.g., Manhattan)">
+                        {% if cuisine %}
+                            <input type="hidden" name="cuisine" value="{{ cuisine }}">
+                        {% endif %}
+                        {% if grade %}
+                            <input type="hidden" name="grade" value="{{ grade }}">
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </div>
+                </form>
+                
+                <!-- OFFCANVAS TOGGLE BUTTON -->
+                <button class="btn btn-primary w-100 mb-4" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilters" aria-controls="offcanvasFilters">
+                    View All Filters ➡️
+                </button>
+                
+                <h5 class="mt-4 mb-3 text-muted border-top pt-3">Restaurant List (Showing up to 100 results)</h5>
+                
+                <div class="restaurant-list-container" style="max-height: 680px; overflow-y: auto;">
                     {% for rest in data %}
-                    <tr>
-                        <td>{{ rest.DBA }}</td>
-                        <td>{{ rest.BORO }}</td>
-                        <td>{{ rest.CUISINE_DESCRIPTION }}</td>
-                        <td>{{ rest.GRADE or 'N/A' }}</td>
-                        <td>{{ rest.INSPECTION_DATE }}</td>
-                        <td>{{ rest.BUILDING }} {{ rest.STREET }}</td>
-                    </tr>
+                        {% set grade_val = rest.GRADE or 'N/A' %}
+                        
+                        {# Logic to set the image path #}
+                        {% set grade_img_src = 'pending.jpg' %}
+                        {% if grade_val == 'A' %}{% set grade_img_src = 'A.jpg' %}
+                        {% elif grade_val == 'B' %}{% set grade_img_src = 'B.jpg' %}
+                        {% elif grade_val == 'C' %}{% set grade_img_src = 'C.jpg' %}
+                        {% elif grade_val == 'Z' %}{% set grade_img_src = 'pending.jpg' %}
+                        {% endif %}
+
+                        <div class="card restaurant-card shadow-sm">
+                            <div class="row g-0 restaurant-row">
+                                <div class="col-10">
+                                    <div class="card-body py-2 px-3 card-body-centered">
+                                        <h6 class="card-title card-title-dba text-truncate">{{ rest.DBA | replace('**', '') }}</h6>
+                                        <p class="card-text text-muted small mb-1">{{ rest['CUISINE DESCRIPTION'] or rest.CUISINE_DESCRIPTION }} | {{ rest.BORO }}</p> 
+                                        <p class="card-text text-truncate small mb-0">
+                                            {{ rest.BUILDING }} {{ rest.STREET }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="col-2 d-flex align-items-center justify-content-center">
+                                    <div class="grade-banner rounded-end">
+                                        <img src="{{ url_for('static', filename=grade_img_src) }}" alt="NYC Restaurant Grade: {{ grade_val }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted">No results found.</td>
-                    </tr>
+                        <div class="alert alert-info text-center small" role="alert">
+                            No restaurants found matching those filters.
+                        </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                </div>
+
+            </div>
         </div>
     </div>
+    
+    <!-- ********************************************** -->
+    <!-- OFFCANVAS FILTER PANEL (Slides from Right) -->
+    <!-- ********************************************** -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasFilters" aria-labelledby="offcanvasFiltersLabel">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasFiltersLabel">Filter Dashboard</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+
+        <!-- Filter by Grade -->
+        <h5 class="mt-0 mb-3 text-muted">Filter by Grade</h5>
+        <div class="filter-scroll-container mb-4">
+            <div class="d-flex filter-no-wrap">
+                {# Preserve other filters: cuisine, borough #}
+                {% set current_other_params = '&cuisine=' + cuisine if cuisine else '' %}
+                {% set current_other_params = current_other_params + ('&borough=' + borough if borough else '') %}
+                
+                <a href="/restaurants?grade=A{{ current_other_params }}" class="quick-filter-button {% if grade == 'A' %}filter-active{% endif %}">A Grade</a>
+                <a href="/restaurants?grade=B{{ current_other_params }}" class="quick-filter-button {% if grade == 'B' %}filter-active{% endif %}">B Grade</a>
+                <a href="/restaurants?grade=C{{ current_other_params }}" class="quick-filter-button {% if grade == 'C' %}filter-active{% endif %}">C Grade</a>
+                <a href="/restaurants?grade=Z{{ current_other_params }}" class="quick-filter-button {% if grade == 'Z' %}filter-active{% endif %}">Pending/Z</a>
+            </div>
+        </div>
+
+        <!-- Filter by Borough -->
+        <h5 class="mt-4 mb-3 text-muted border-top pt-3">Filter by Borough</h5>
+        <div class="filter-scroll-container mb-4">
+            <div class="d-flex filter-no-wrap">
+                {# Preserve other filters: cuisine, grade #}
+                {% set current_other_params = '&cuisine=' + cuisine if cuisine else '' %}
+                {% set current_other_params = current_other_params + ('&grade=' + grade if grade else '') %}
+
+                {% set boroughs = ['Manhattan', 'Queens', 'Brooklyn', 'Bronx', 'Staten Island'] %}
+                {% for boro in boroughs %}
+                    <a href="/restaurants?borough={{ boro }}{{ current_other_params }}" class="quick-filter-button {% if borough and borough|lower == boro|lower %}filter-active{% endif %}">{{ boro }}</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Filter by Cuisine -->
+        <h5 class="mt-4 mb-3 text-muted border-top pt-3">Filter by Cuisine</h5>
+        <div class="filter-scroll-container mb-4">
+            <div class="d-flex filter-no-wrap">
+                {# Preserve other filters: borough, grade #}
+                {% set current_other_params = '&borough=' + borough if borough else '' %}
+                {% set current_other_params = current_other_params + ('&grade=' + grade if grade else '') %}
+                
+                {% set cuisines = ['American', 'Italian', 'Chinese', 'Japanese', 'Mexican', 'French', 'Seafood'] %}
+                {% for c in cuisines %}
+                    <a href="/restaurants?cuisine={{ c }}{{ current_other_params }}" class="quick-filter-button {% if cuisine and cuisine|lower == c|lower %}filter-active{% endif %}">{{ c }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="d-grid mt-4">
+            <a href="/restaurants" class="btn btn-outline-danger">Clear All Filters</a>
+        </div>
+        
+      </div>
+    </div>
+    <!-- END OF OFFCANVAS -->
+
+    <!-- Bootstrap JS Bundle (Required for Offcanvas and other components) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Note: The 'data' variable is passed from Flask/Jinja and is available here.
+        // const restaurants = {{ data | tojson }}; 
+    </script>
 </body>
 </html>
