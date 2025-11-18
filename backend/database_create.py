@@ -7,7 +7,7 @@ db = client.cleanbite
 collection = db.restaurants
 
 # 2️⃣ Read your CSV file
-csv_path = "C:/Users/anush/OneDrive/Documents/GitHub/DE-Project/backend/restaurants.csv"  # make sure it's in the same folder
+csv_path = "backend/restaurants.csv"  # make sure it's in the same folder
 print(f"Loading data from {csv_path} ...")
 df = pd.read_csv(csv_path, encoding='latin1')  # or 'latin1'
 
