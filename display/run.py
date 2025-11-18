@@ -1,15 +1,26 @@
 import os
 import sys
+import logging
+
+logger = logging.getLogger("py4j")
+logger.setLevel(logging.ERROR)
+
+os.environ["SPARK_LOCAL_HOSTNAME"] = "localhost"
+os.environ["HADOOP_OPTIONAL_TOOLS"] = ""
+
+logging.getLogger('werkzeug').setLevel(logging.INFO)
+os.environ["PYSPARK_SILENCE_STDOUT"] = "1"
+os.environ["PYSPARK_SILENCE_SCALA_STDOUT"] = "1"
 
 os.environ['PYSPARK_PYTHON'] = sys.executable
 os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 os.environ['HADOOP_HOME'] = 'C:\\hadoop'
 
-
 from flask import Flask, render_template, request
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, upper, trim
 import json
+import pathlib
 
 # -------------------------------------------------
 # FLASK SETUP
@@ -17,42 +28,75 @@ import json
 app = Flask(__name__, template_folder="templates")
 app.jinja_env.filters['tojson'] = json.dumps
 
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))      # C:/.../DE-Project/display
+DE_PROJECT = os.path.dirname(PROJECT_ROOT)                     # C:/.../DE-Project
+JARS_DIR = os.path.join(PROJECT_ROOT, "jars")                  # C:/.../DE-Project/display/jars
+
+# Collect all JAR files in jars/ directory
+jar_files = []
+for f in os.listdir(JARS_DIR):
+    if f.endswith(".jar"):
+        file_path = os.path.join(JARS_DIR, f)
+        uri = pathlib.Path(file_path).absolute().as_uri()  # <-- Converts to file:///C:/....
+        jar_files.append(uri)
+
+jars_string = ",".join(jar_files)
+
 
 # -------------------------------------------------
-# SPARK + MONGODB CONNECTION
+# SPARK INITIALIZATION — FIXED
 # -------------------------------------------------
-MONGO_URI = "mongodb://127.0.0.1/cleanbite.restaurants"
 
-spark = SparkSession \
-    .builder \
-    .appName("CleanBite") \
-    .config("spark.mongodb.input.uri", "mongodb://127.0.0.1/cleanbite.restaurants") \
-    .config("spark.mongodb.output.uri", "mongodb://127.0.0.1/cleanbite.restaurants") \
-    .config("spark.jars.packages", "org.mongodb.spark:mongo-spark-connector_2.13:10.3.0") \
-    .config("spark.cores.max", "4") \
-    .config('spark.executor.memory', '8G') \
-    .config('spark.driver.maxResultSize', '8g') \
-    .config('spark.kryoserializer.buffer.max', '512m') \
-    .config("spark.driver.cores", "4") \
-    .getOrCreate()
+def create_spark():
+    """
+    Create SparkSession only ONCE.
+    Prevent Ivy from resolving dependencies repeatedly.
+    Reduce Spark logs.
+    Prevent double creation due to Flask auto-reload.
+    """
 
-sc = spark.sparkContext
+    # Reduce Spark logging
+    os.environ["PYSPARK_SUBMIT_ARGS"] = "--conf spark.ui.showConsoleProgress=false pyspark-shell"
+    spark = (
+        SparkSession.builder
+            .appName("CleanBite")
+            # use **local jar** to avoid Ivy downloading every run
+            .config("spark.jars", jars_string)
+            .config("spark.mongodb.read.connection.uri", "mongodb://127.0.0.1")
+            .config("spark.mongodb.write.connection.uri", "mongodb://127.0.0.1")
+            .config("spark.mongodb.read.database", "cleanbite")
+            .config("spark.mongodb.write.database", "cleanbite")
+            .config("spark.mongodb.read.collection", "restaurants")
+            .config("spark.mongodb.write.collection", "restaurants")
+            .config("spark.driver.memory", "4g")
+            .config("spark.executor.memory", "4g")
+            .config("spark.sql.shuffle.partitions", "4")
+            .getOrCreate()
+    )
 
-print("Using Apache Spark Version", spark.version)
+    spark.sparkContext.setLogLevel("ERROR")
+    spark.sparkContext.setSystemProperty("hadoop.home.dir", "C:\\hadoop")
+    return spark
 
-# Load MongoDB restaurants collection into Spark DataFrame
-df = spark.read \
-    .format("mongodb") \
-    .option("spark.mongodb.read.connection.uri", "mongodb://127.0.0.1") \
-    .option("spark.mongodb.read.database", "cleanbite") \
-    .option("spark.mongodb.read.collection", "restaurants") \
-    .load()
+# Create Spark globally only once
+spark = create_spark()
 
-# Clean data (uppercase and trim)
-df = df.withColumn("BORO", trim(upper(col("BORO"))))
-df = df.withColumn("CUISINE DESCRIPTION", trim(upper(col("CUISINE DESCRIPTION"))))
-df = df.withColumn("GRADE", trim(upper(col("GRADE"))))
+print("Using Apache Spark Version:", spark.version)
 
+
+# -------------------------------------------------
+# LOAD & CLEAN DATA — FIXED
+# -------------------------------------------------
+
+df = (
+    spark.read.format("mongodb")
+        .load()
+        .withColumn("BORO", trim(upper(col("BORO"))))
+        .withColumn("CUISINE DESCRIPTION", trim(upper(col("CUISINE DESCRIPTION"))))
+        .withColumn("GRADE", trim(upper(col("GRADE"))))
+)
+
+df.limit(1).count()
 
 # -------------------------------------------------
 # ROUTES
@@ -65,23 +109,19 @@ def home():
 
 @app.route("/restaurants")
 def view_restaurants():
+
     borough = request.args.get("borough")
     cuisine = request.args.get("cuisine")
     grade = request.args.get("grade")
 
     filtered = df
 
-    # 1. Borough filter
     if borough:
         filtered = filtered.filter(upper(col("BORO")) == borough.upper())
 
-    # 2. Cuisine filter
     if cuisine:
-        filtered = filtered.filter(
-            upper(col("CUISINE DESCRIPTION")) == cuisine.upper()
-        )
+        filtered = filtered.filter(upper(col("CUISINE DESCRIPTION")) == cuisine.upper())
 
-    # 3. Grade filter
     if grade:
         if grade.upper() == "Z":
             filtered = filtered.filter(
@@ -90,7 +130,6 @@ def view_restaurants():
         else:
             filtered = filtered.filter(upper(col("GRADE")) == grade.upper())
 
-    # Convert Spark → Python (dict)
     data = filtered.limit(100).toPandas().to_dict(orient="records")
 
     return render_template(
@@ -103,7 +142,8 @@ def view_restaurants():
 
 
 # -------------------------------------------------
-# RUN APP
+# RUN APP — FIXED
 # -------------------------------------------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    # NEVER use debug=True when Spark is in the app
+    app.run(debug=False)

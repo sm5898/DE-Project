@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>CleanBite | Map Dashboard</title>
-    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
         /* General layout styles */
         body { background-color: #f7f7f7; }
@@ -33,6 +33,7 @@
             overflow-x: auto;
             scrollbar-width: none;
             -ms-overflow-style: none;
+            padding-bottom: 10px;
         }
         .filter-scroll-container::-webkit-scrollbar {
             display: none;
@@ -40,50 +41,63 @@
         .filter-no-wrap {
             flex-wrap: nowrap !important;
         }
+        
+        /* === START NEW BUTTON STYLES === */
+        
+        /* Filter Button Styles (Dark Green Theme) */
         .quick-filter-button {
-            border-radius: 20px;
-            font-weight: 600;
-            padding: 0.4rem 0.8rem;
-            font-size: 0.9rem;
-            margin-right: 8px;
-            text-decoration: none;
-            display: inline-block;
-            flex-shrink: 0;
-            white-space: nowrap;
-            
-            /* --- UNIFORM NEUTRAL BUTTON STYLE (BASE) --- */
-            background-color: #f8f9fa; /* Light Gray Background */
-            color: #6c757d; /* Dark Gray Text */
-            border: 1px solid #ced4da; /* Light Border */
-            transition: all 0.2s ease;
+        border-radius: 10px; /* Slightly larger radius */
+        
+        /* FONT CHANGES */
+        font-family: 'Arial';
+        font-weight: 700; 
+        font-size: 1.15rem; /* Further increased size */
+        
+        /* SIZE AND SPACING CHANGES */
+        padding: 1rem 1.5rem; /* Increased vertical and horizontal padding for much larger hit area */
+        margin-right: 12px;
+        min-height: 70px; /* Increased min-height for uniform look */
+        
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        flex-shrink: 0;
+        
+        background-color: #2a3d3d; 
+        color: #ced4da; 
+        border: 1px solid #2a3d3d; 
+        transition: all 0.2s ease;
         }
 
         .quick-filter-button:hover {
-            /* --- DARKER HOVER COLOR --- */
-            background-color: #dee2e6; /* Medium Gray on hover */
-            color: #495057;
-            border-color: #adb5bd;
+            background-color: #3a4d4d;
+            color: #ffffff;
+            border-color: #3a4d4d;
         }
 
-        /* --- ACTIVE FILTER STYLE (HIGHLIGHT) --- */
+        /* ACTIVE FILTER STYLE */
         .filter-active {
-            background-color: #007bff; /* Primary Blue */
-            color: white; /* White Text */
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.5); /* Blue glow */
+            background-color: #28a745 !important;
+            color: white !important; 
+            border-color: #28a745 !important;
+            box-shadow: none !important;
         }
         
-        /* *** RESTAURANT CARD STYLES *** */
+        /* === END NEW BUTTON STYLES === */
+        
+        /* RESTAURANT CARD STYLES */
         .restaurant-card { 
             margin-bottom: 12px; 
             border-radius: 8px; 
             overflow: hidden; 
-            height: 120px; 
+            height: 100px; 
             display: flex; 
-            align-items: center;
+            align-items: stretch;
+            border: 1px solid #ddd;
         }
-        
-        /* IMAGE AND BANNER STYLES */
+
+        /* Grade/Image Column */
         .grade-banner {
             height: 100px; 
             width: 100%; 
@@ -99,83 +113,126 @@
             max-height: 100%;
             object-fit: contain; 
         }
-        
+
         /* Text prominence */
         .card-title-dba {
             font-size: 1.2rem; 
             font-weight: 700;
             margin-bottom: 0.25rem;
         }
-        
+
         /* Alignment */
         .restaurant-row {
             width: 100%;
             margin: 0;
             align-items: center; 
         }
-
-        .card-body-centered {
+        
+        /* Card Body */
+        .card-body-content {
             display: flex;
             flex-direction: column;
             justify-content: center; 
             height: 100%; 
-            padding-top: 0; 
-            padding-bottom: 0; 
+            padding: 10px 15px; 
+            flex-grow: 1;
         }
     </style>
 </head>
 <body>
-    <header class="container-fluid bg-white p-3 mb-4 border-bottom">
-        <div class="d-flex justify-content-between align-items-center container">
-            <h1 class="h3 mb-0">CleanBite <small class="text-muted">Dashboard</small></h1>
-            <a href="/restaurants" class="btn btn-outline-secondary">Clear All Filters</a>
-        </div>
-    </header>
+    
+<header class="container-fluid bg-white p-3 mb-4 border-bottom">
+    <div class="d-flex justify-content-between align-items-center container">
+        
+        <form class="col-lg-6 col-md-8 me-4 ms-0" method="get" action="/restaurants">
+            
+            <div class="input-group">
+                <input type="text" class="form-control" name="query" 
+                       placeholder="Search by Restaurant Name, Cuisine, or Address..."
+                       value="{{ search_query or '' }}">
+                
+                {# Hidden fields to preserve existing filters #}
+                {% if borough %} <input type="hidden" name="borough" value="{{ borough }}"> {% endif %}
+                {% if cuisine %} <input type="hidden" name="cuisine" value="{{ cuisine }}"> {% endif %}
+                {% if grade %} <input type="hidden" name="grade" value="{{ grade }}"> {% endif %}
+                
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+        
+        <h1 class="h3 mb-0 text-nowrap">CleanBite</h1>
+    </div>
+</header> 
 
     <div class="container main-container-box">
         <div class="row">
             
-            <!-- Map Placeholder Area (7 columns) -->
             <div class="col-md-7">
                 <div id="map-placeholder">
                     **Map Area Placeholder (col-md-7)**
                 </div>
             </div>
 
-            <!-- Filters and List Area (5 columns) -->
             <div class="col-md-5">
 
-                <h5 class="mt-0 mb-3 text-muted">Quick Search</h5>
-                <form class="mb-4" method="get" action="/restaurants">
-                    <div class="input-group">
-                        <input type="text" class="form-control" name="borough" placeholder="Type a Borough (e.g., Manhattan)">
-                        {% if cuisine %}
-                            <input type="hidden" name="cuisine" value="{{ cuisine }}">
-                        {% endif %}
-                        {% if grade %}
-                            <input type="hidden" name="grade" value="{{ grade }}">
-                        {% endif %}
-                        <button type="submit" class="btn btn-primary">Search</button>
+                <h6 class="mt-0 mb-3 text-muted">Boroughs</h6>
+                <div class="filter-scroll-container mb-4">
+                    <div class="d-flex filter-no-wrap">
+                        {# Preserve other filters: cuisine, grade #}
+                        {% set current_other_params = '&cuisine=' + cuisine if cuisine else '' %}
+                        {% set current_other_params = current_other_params + ('&grade=' + grade if grade else '') %}
+                        
+                        {% set boroughs = ['Manhattan', 'Queens', 'Brooklyn', 'Bronx', 'Staten Island'] %}
+                        {% for boro in boroughs %}
+                            <a href="/restaurants?borough={{ boro }}{{ current_other_params }}" 
+                               class="quick-filter-button {% if borough and borough|lower == boro|lower %}filter-active{% endif %}">
+                               {{ boro }}
+                            </a>
+                        {% endfor %}
                     </div>
-                </form>
+                </div>
+
+                <h6 class="mt-4 mb-3 text-muted">Cuisine</h6>
+                <div class="filter-scroll-container mb-4">
+                    <div class="d-flex filter-no-wrap">
+                        {# Preserve other filters: borough, grade #}
+                        {% set current_other_params = '&borough=' + borough if borough else '' %}
+                        {% set current_other_params = current_other_params + ('&grade=' + grade if grade else '') %}
+                        
+                        {% set cuisines = ['Italian', 'Japanese', 'Indian', 'American', 'Chinese', 'Mexican'] %}
+                        {% for c in cuisines %}
+                            <a href="/restaurants?cuisine={{ c }}{{ current_other_params }}" 
+                               class="quick-filter-button {% if cuisine and cuisine|lower == c|lower %}filter-active{% endif %}">
+                               {{ c }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
                 
-                <!-- OFFCANVAS TOGGLE BUTTON -->
-                <button class="btn btn-primary w-100 mb-4" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilters" aria-controls="offcanvasFilters">
-                    View All Filters ➡️
-                </button>
-                
-                <h5 class="mt-4 mb-3 text-muted border-top pt-3">Restaurant List (Showing up to 100 results)</h5>
+                <div class="row mb-4 g-2">
+                    <div class="col-6">
+                        <a href="/restaurants" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-x-circle"></i> Clear Filters
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-outline-secondary w-100" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilters" aria-controls="offcanvasFilters">
+                            <i class="bi bi-sliders"></i> More Filters
+                        </button>
+                    </div>
+                </div>
+                <h6 class="mt-4 mb-3 text-muted border-top pt-3">Restaurant List (Showing up to 100 results)</h6>
                 
                 <div class="restaurant-list-container" style="max-height: 680px; overflow-y: auto;">
                     {% for rest in data %}
                         {% set grade_val = rest.GRADE or 'N/A' %}
                         
                         {# Logic to set the image path #}
-                        {% set grade_img_src = 'pending.jpg' %}
-                        {% if grade_val == 'A' %}{% set grade_img_src = 'A.jpg' %}
-                        {% elif grade_val == 'B' %}{% set grade_img_src = 'B.jpg' %}
-                        {% elif grade_val == 'C' %}{% set grade_img_src = 'C.jpg' %}
-                        {% elif grade_val == 'Z' %}{% set grade_img_src = 'pending.jpg' %}
+                        {% set grade_img_src = 'pending.jpeg' %}
+                        {% if grade_val == 'A' %}{% set grade_img_src = 'A.jpeg' %}
+                        {% elif grade_val == 'B' %}{% set grade_img_src = 'B.jpeg' %}
+                        {% elif grade_val == 'C' %}{% set grade_img_src = 'C.jpeg' %}
+                        {% elif grade_val == 'Z' %}{% set grade_img_src = 'pending.jpeg' %}
                         {% endif %}
 
                         <div class="card restaurant-card shadow-sm">
@@ -207,18 +264,14 @@
         </div>
     </div>
     
-    <!-- ********************************************** -->
-    <!-- OFFCANVAS FILTER PANEL (Slides from Right) -->
-    <!-- ********************************************** -->
     <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasFilters" aria-labelledby="offcanvasFiltersLabel">
       <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasFiltersLabel">Filter Dashboard</h5>
+        <h5 class="offcanvas-title" id="offcanvasFiltersLabel">Grade Filters</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
       <div class="offcanvas-body">
 
-        <!-- Filter by Grade -->
-        <h5 class="mt-0 mb-3 text-muted">Filter by Grade</h5>
+        <h6 class="mt-0 mb-3 text-muted">Filter by Grade</h6>
         <div class="filter-scroll-container mb-4">
             <div class="d-flex filter-no-wrap">
                 {# Preserve other filters: cuisine, borough #}
@@ -231,36 +284,6 @@
                 <a href="/restaurants?grade=Z{{ current_other_params }}" class="quick-filter-button {% if grade == 'Z' %}filter-active{% endif %}">Pending/Z</a>
             </div>
         </div>
-
-        <!-- Filter by Borough -->
-        <h5 class="mt-4 mb-3 text-muted border-top pt-3">Filter by Borough</h5>
-        <div class="filter-scroll-container mb-4">
-            <div class="d-flex filter-no-wrap">
-                {# Preserve other filters: cuisine, grade #}
-                {% set current_other_params = '&cuisine=' + cuisine if cuisine else '' %}
-                {% set current_other_params = current_other_params + ('&grade=' + grade if grade else '') %}
-
-                {% set boroughs = ['Manhattan', 'Queens', 'Brooklyn', 'Bronx', 'Staten Island'] %}
-                {% for boro in boroughs %}
-                    <a href="/restaurants?borough={{ boro }}{{ current_other_params }}" class="quick-filter-button {% if borough and borough|lower == boro|lower %}filter-active{% endif %}">{{ boro }}</a>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Filter by Cuisine -->
-        <h5 class="mt-4 mb-3 text-muted border-top pt-3">Filter by Cuisine</h5>
-        <div class="filter-scroll-container mb-4">
-            <div class="d-flex filter-no-wrap">
-                {# Preserve other filters: borough, grade #}
-                {% set current_other_params = '&borough=' + borough if borough else '' %}
-                {% set current_other_params = current_other_params + ('&grade=' + grade if grade else '') %}
-                
-                {% set cuisines = ['American', 'Italian', 'Chinese', 'Japanese', 'Mexican', 'French', 'Seafood'] %}
-                {% for c in cuisines %}
-                    <a href="/restaurants?cuisine={{ c }}{{ current_other_params }}" class="quick-filter-button {% if cuisine and cuisine|lower == c|lower %}filter-active{% endif %}">{{ c }}</a>
-                {% endfor %}
-            </div>
-        </div>
         
         <div class="d-grid mt-4">
             <a href="/restaurants" class="btn btn-outline-danger">Clear All Filters</a>
@@ -268,13 +291,7 @@
         
       </div>
     </div>
-    <!-- END OF OFFCANVAS -->
 
-    <!-- Bootstrap JS Bundle (Required for Offcanvas and other components) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Note: The 'data' variable is passed from Flask/Jinja and is available here.
-        // const restaurants = {{ data | tojson }}; 
-    </script>
 </body>
 </html>
