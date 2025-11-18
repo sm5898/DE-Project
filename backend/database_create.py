@@ -7,9 +7,9 @@ db = client.cleanbite
 collection = db.restaurants
 
 # 2️⃣ Read your CSV file
-csv_path = "restaurants.csv"  # make sure it's in the same folder
+csv_path = "backend/restaurants.csv"  # make sure it's in the same folder
 print(f"Loading data from {csv_path} ...")
-df = pd.read_csv(csv_path, encoding='ISO-8859-1')  # or 'latin1'
+df = pd.read_csv(csv_path, encoding='latin1')  # or 'latin1'
 
 # 3️⃣ Convert to dictionary format
 data_dict = df.to_dict(orient="records")

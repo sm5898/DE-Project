@@ -1,0 +1,194 @@
+DOCKER DEPENDENCIES & RECOMMENDATIONS
+
+Purpose
+
+This file lists the system, JVM, Python, and connector dependencies required to run the `display/run.py` (Flask + PySpark) application in a Docker environment. It also provides example Dockerfile(s) and a docker-compose.yml to run the app alongside MongoDB.
+
+Notes & architecture
+
+- We recommend running the app and MongoDB in separate containers (one for the Flask/PySpark app, one using the official MongoDB image). Spark (PySpark) will run embedded inside the app container (local Spark session). For production workloads, consider running a proper Spark cluster.
+- The MongoDB Spark Connector is required by Spark to read/write to MongoDB. Put connector JAR(s) in `/app/jars/` inside the container or pass them to `spark.jars` at runtime.
+
+Pinned versions (used in this project session)
+
+- Java: OpenJDK 17 (tested with 17.0.17)
+- Spark / PySpark: pyspark 4.0.1
+- Python: 3.10 (the testing used /opt/homebrew/bin/python3.10)
+- Flask: 3.1.2
+- PyMongo: 4.15.4
+- pandas: 2.3.3
+- py4j: 0.10.9.9 (installed as pyspark dependency)
+- numpy: 2.2.6
+- MongoDB server: 6.0.26
+- MongoDB Spark Connector (recommended): mongo-spark-connector_2.13-10.3.0.jar (place in `jars/`)
+
+Files to add to repo (suggested)
+
+1) `requirements.txt` (Python deps)
+```
+flask==3.1.2
+pyspark==4.0.1
+pymongo==4.15.4
+pandas==2.3.3
+# Optional / supportive
+numpy==2.2.6
+```
+
+2) `display/jars/` directory: place the MongoDB Spark connector JAR(s) here. Example names you may use (match your Spark/Scala version):
+- mongo-spark-connector_2.13-10.3.0.jar
+- (If using a shaded connector, prefer the "with-dependencies" jar or include dependency jars too.)
+
+System packages / OS image choices
+
+- Base image (app): `openjdk:17-jdk-slim` or `python:3.10-slim` + install OpenJDK 17. Example used here: `openjdk:17-slim` then install python3 and pip or use `python:3.10-slim` then install OpenJDK 17 via package manager.
+- MongoDB: use `mongo:6.0` official image (no need to install on app container).
+
+Example Dockerfile (app)
+
+Below is a recommended Dockerfile for the Flask + PySpark app. It installs system deps, copies the repository, installs Python deps, downloads (or uses bundled) connector JARs, sets JAVA_HOME and exposes the app port.
+
+```dockerfile
+# Use a Python base (slim) and install OpenJDK 17
+FROM python:3.10-slim
+
+# Install apt packages for OpenJDK, curl, netcat and other prerequisites
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    openjdk-17-jdk-headless \
+    ca-certificates \
+    curl \
+    netcat \
+    gnupg \
+  && rm -rf /var/lib/apt/lists/*
+
+# Set Java home
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH="$JAVA_HOME/bin:$PATH"
+
+# Create app directory
+WORKDIR /app
+
+# Copy application files
+COPY . /app
+
+# Ensure we have a jars directory (optional; you can COPY your local jars here)
+RUN mkdir -p /app/display/jars
+# If you keep connector jars in repo/display/jars, they'll be copied by COPY above.
+
+# Install Python deps
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Set environment variables recommended for PySpark
+ENV PYSPARK_PYTHON=python3
+ENV PYSPARK_DRIVER_PYTHON=python3
+ENV PYSPARK_SUBMIT_ARGS="--conf spark.ui.showConsoleProgress=false pyspark-shell"
+
+# Expose the Flask port used by your app (default in run.py was 5027)
+EXPOSE 5027
+
+# Default command
+CMD ["python", "display/run.py"]
+```
+
+Notes on connector JARs
+
+- You must include the MongoDB Spark Connector JAR(s) inside the image (recommended) or configure the container to fetch them at runtime.
+- Place them under `/app/display/jars/` so your existing code's `JARS_DIR` picks them up automatically.
+- Example download (in Dockerfile you could add):
+  - curl -L -o /app/display/jars/mongo-spark-connector_2.13-10.3.0.jar https://repo1.maven.org/maven2/org/mongodb/spark/mongo-spark-connector_2.13/10.3.0/mongo-spark-connector_2.13-10.3.0.jar
+
+docker-compose recommended setup
+
+Create a `docker-compose.yml` to run the app + MongoDB together. This allows isolation and a stable network name.
+
+```yaml
+version: '3.8'
+services:
+  mongo:
+    image: mongo:6.0
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+
+  app:
+    build: .
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      # ensure JAVA_HOME is correct for the base image you pick
+    ports:
+      - '5027:5027'
+    volumes:
+      - ./:/app
+    command: ["sh", "-c", "python display/run.py"]
+
+volumes:
+  mongo-data:
+```
+
+Notes about networking & URIs
+
+- In `docker-compose`, use the service name `mongo` in the Mongo URI (mongodb://mongo:27017) instead of `127.0.0.1` so the app container can resolve the host.
+- You may prefer to wire the MongoDB URI into Spark config in `create_spark()` via environment variables.
+
+Healthchecks and readiness
+
+- Add a simple healthcheck that waits for Mongo on port 27017 before app starts, or rely on `depends_on` + simple retry logic in the app.
+- Example healthcheck for the app service (docker-compose):
+  ```yaml
+  healthcheck:
+    test: ["CMD", "nc", "-z", "mongo", "27017"]
+    interval: 5s
+    timeout: 5s
+    retries: 5
+  ```
+
+Extra runtime environment variables (suggested)
+
+- MONGO_URI: e.g. mongodb://mongo:27017
+- SPARK_DRIVER_MEMORY (override using Spark config or env)
+- JARS_DIR: if you move connector jars
+
+Building and running
+
+1) Build the app image
+
+```bash
+docker-compose build app
+```
+
+2) Start compose stack
+
+```bash
+docker-compose up
+```
+
+3) The Flask app should be available at http://localhost:5027
+
+Troubleshooting
+
+- If Spark complains about Java version, ensure the container base image has OpenJDK 17 and JAVA_HOME is set.
+- If Mongo fails to connect: ensure the app uses `mongodb://mongo:27017` (service name) in `create_spark()` or via `MONGO_URI` environment variable.
+- If the MongoDB Spark connector complains about missing classes, confirm the connector JAR version matches the Spark/Scala binary compatibility and is available in `/app/display/jars` or passed via `spark.jars`.
+
+Optional: Single-container approach (not recommended for production)
+
+- You can run both MongoDB and the app inside one container, but this is discouraged. The compose approach (separate containers) is better for portability and scaling.
+
+Summary checklist before building Docker image
+
+- [ ] Add `requirements.txt` to repo (pinned Python deps)
+- [ ] Add connector JAR(s) to `display/jars/` (or add Dockerfile steps to download them)
+- [ ] Verify `display/run.py` reads `MONGO_URI` from environment (or edit it to read from env) for containerized runs
+- [ ] Create `docker-compose.yml` (example above)
+
+If you want, I can:
+- Add `requirements.txt` to the repo with the pinned versions used here.
+- Add a `Dockerfile.app` and `docker-compose.yml` file to the repository and test them (build and run a containerized stack here).
+- Create a small startup script that waits for Mongo to be ready before launching the Flask app.
+
+Tell me which of those you'd like me to add next and I will implement it.
