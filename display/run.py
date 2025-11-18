@@ -141,9 +141,8 @@ def view_restaurants():
     )
 
 
-# -------------------------------------------------
-# RUN APP — FIXED
-# -------------------------------------------------
+# --------------------------
+# Run App
+# --------------------------
 if __name__ == "__main__":
-    # NEVER use debug=True when Spark is in the app
-    app.run(debug=False, port=5027)
+    app.run(debug=True, port=4205)
