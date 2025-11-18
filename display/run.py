@@ -37,7 +37,7 @@ jar_files = []
 for f in os.listdir(JARS_DIR):
     if f.endswith(".jar"):
         file_path = os.path.join(JARS_DIR, f)
-        uri = pathlib.Path(file_path).absolute().as_uri()  # <-- Converts to file:///C:/....
+        uri = pathlib.Path(file_path).absolute().as_uri()  # <-- Converts to C:/....
         jar_files.append(uri)
 
 jars_string = ",".join(jar_files)
@@ -146,4 +146,4 @@ def view_restaurants():
 # -------------------------------------------------
 if __name__ == "__main__":
     # NEVER use debug=True when Spark is in the app
-    app.run(debug=False, port=5027)
+    app.run(debug=False, port=5027, port=5027)
