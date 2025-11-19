@@ -140,9 +140,24 @@ def view_restaurants():
         grade=grade
     )
 
+@app.route("/restaurant/<camis>")
+def restaurant_detail(camis):
+    """
+    Display details for a single restaurant using its CAMIS (unique restaurant ID).
+    """
+    single_df = df.filter(col("CAMIS") == camis)
+    data = single_df.limit(1).toPandas().to_dict(orient="records")
+
+    if not data:
+        return f"<h3>No restaurant found with CAMIS {camis}</h3>"
+
+    restaurant = data[0]
+    return render_template("restaurant_detail.html", r=restaurant)
+
 
 # --------------------------
 # Run App
 # --------------------------
 if __name__ == "__main__":
-    app.run(debug=True, port=4205)
+    # NEVER use debug=True when Spark is in the app
+    app.run(debug=False, port=5027)

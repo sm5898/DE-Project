@@ -239,8 +239,12 @@
                             <div class="row g-0 restaurant-row">
                                 <div class="col-10">
                                     <div class="card-body py-2 px-3 card-body-centered">
-                                        <h6 class="card-title card-title-dba text-truncate">{{ rest.DBA | replace('**', '') }}</h6>
-                                        <p class="card-text text-muted small mb-1">{{ rest['CUISINE DESCRIPTION'] or rest.CUISINE_DESCRIPTION }} | {{ rest.BORO }}</p> 
+                                        <a href="/restaurant/{{ rest.CAMIS }}" class="text-decoration-none text-dark">
+                                        <h6 class="card-title card-title-dba text-truncate mb-1">{{ rest.DBA | replace('**', '') }}</h6>
+                                        </a>
+                                        <p class="card-text text-muted small mb-1">
+                                        {{ rest['CUISINE DESCRIPTION'] or rest.CUISINE_DESCRIPTION }} | {{ rest.BORO }}
+                                        </p>
                                         <p class="card-text text-truncate small mb-0">
                                             {{ rest.BUILDING }} {{ rest.STREET }}
                                         </p>
