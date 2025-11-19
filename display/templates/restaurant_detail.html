@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ r.DBA }} | CleanBite</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+  <div class="container mt-4">
+    <a href="/restaurants" class="btn btn-outline-secondary mb-3">← Back to list</a>
+    <div class="card p-4 shadow-sm">
+      <h2>{{ r.DBA }}</h2>
+      <p><strong>Borough:</strong> {{ r.BORO or 'N/A' }}</p>
+      <p><strong>Cuisine:</strong> {{ r['CUISINE DESCRIPTION'] or 'N/A' }}</p>
+      <p><strong>Grade:</strong> {{ r.GRADE or 'Not graded' }}</p>
+      <p><strong>Inspection Date:</strong> {{ r['INSPECTION DATE'] or 'N/A' }}</p>
+      <p><strong>Violation Description:</strong> {{ r['VIOLATION DESCRIPTION'] or 'No violations found' }}</p>
+      <p><strong>Address:</strong> {{ r['BUILDING'] }} {{ r['STREET'] }}, {{ r['ZIPCODE'] }}</p>
+
+      {% if r['Latitude'] and r['Longitude'] %}
+        <p><strong>Coordinates:</strong> {{ r['Latitude'] }}, {{ r['Longitude'] }}</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
