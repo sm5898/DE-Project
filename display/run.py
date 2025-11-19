@@ -17,6 +17,7 @@ os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 os.environ['HADOOP_HOME'] = 'C:\\hadoop'
 
 from flask import Flask, render_template, request
+import pandas as pd
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, upper, trim
 import json
@@ -132,13 +133,58 @@ def view_restaurants():
 
     data = filtered.limit(100).toPandas().to_dict(orient="records")
 
+    # Build pins for the map from the same filtered dataframe so map and list stay in sync
+    pdf = filtered.limit(200).toPandas()
+
+    # borough centroids for quick fallback (approx)
+    borough_centroids = {
+        'MANHATTAN': (40.7831, -73.9712),
+        'QUEENS': (40.7282, -73.7949),
+        'BROOKLYN': (40.6782, -73.9442),
+        'BRONX': (40.8448, -73.8648),
+        'STATEN ISLAND': (40.5795, -74.1502)
+    }
+
+    pins = []
+    for _, row in pdf.iterrows():
+        lat = None
+        lng = None
+        # try common lat/lng fields
+        for lat_key in ('lat', 'LAT', 'latitude', 'Latitude'):
+            if lat_key in pdf.columns and pd.notna(row.get(lat_key)):
+                lat = row.get(lat_key); break
+        for lng_key in ('lng', 'LNG', 'longitude', 'Longitude'):
+            if lng_key in pdf.columns and pd.notna(row.get(lng_key)):
+                lng = row.get(lng_key); break
+
+        # If no coords, fallback to borough centroid
+        if lat is None or lng is None:
+            b = (row.get('BORO') or row.get('boro') or '')
+            bc = borough_centroids.get(str(b).upper())
+            if bc:
+                lat, lng = bc
+
+        if lat is None or lng is None:
+            continue
+
+        pins.append({
+            'lat': float(lat),
+            'lng': float(lng),
+            'name': row.get('DBA') or row.get('dba') or row.get('name') or '',
+            'cuisine': row.get('CUISINE DESCRIPTION') or row.get('CUISINE_DESCRIPTION') or row.get('cuisine') or '',
+            'grade': row.get('GRADE') or row.get('grade') or ''
+        })
+
     return render_template(
         "index.html",
         data=data,
+        pins=pins,
         borough=borough,
         cuisine=cuisine,
         grade=grade
     )
+
+
 
 
 # --------------------------
