@@ -324,7 +324,38 @@
                     const title = obj.name || obj.DBA || obj.dba || '';
                     const cuisine = obj.cuisine || obj['CUISINE DESCRIPTION'] || obj.CUISINE_DESCRIPTION || '';
                     const grade = obj.grade || obj.GRADE || '';
-                    return L.marker(ll).addTo(map).bindPopup(`<strong>${title}</strong><br/>Cuisine: ${cuisine}<br/>Grade: ${grade}`);
+                    const colorMap = {
+                        'A': '#003399',     // Blue (A)
+                        'B': '#4B8B3B',     // Green (B)
+                        'C': '#B65C2B',     // Brownish orange (C)
+                        'Z': '#A0A0A0',     // Gray (Pending)
+                        '': '#A0A0A0',
+                        'N/A': '#A0A0A0'
+                        };
+
+                        const gradeColor = colorMap[grade?.toUpperCase()] || '#A0A0A0';
+
+                        const pinSVG = `
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+                            <path fill="${gradeColor}" stroke="white" stroke-width="2"
+                            d="M16 0C9 0 3 6 3 13c0 9 13 19 13 19s13-10 13-19c0-7-6-13-13-13z"/>
+                        </svg>
+                        `;
+
+                        const icon = L.icon({
+                        iconUrl: `data:image/svg+xml;base64,${btoa(pinSVG)}`,
+                        iconSize: [26, 40],
+                        iconAnchor: [13, 40],
+                        popupAnchor: [0, -35]
+                        });
+
+                        return L.marker(ll, { icon })
+                        .addTo(map)
+                        .bindPopup(`
+                            <strong>${title}</strong><br/>
+                            Cuisine: ${cuisine}<br/>
+                            Grade: ${grade}
+                        `);
                 }
 
                 // Use serverPins (computed using same filters) if present, otherwise fall back to row data

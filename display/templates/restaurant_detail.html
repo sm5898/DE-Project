@@ -2,25 +2,239 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>{{ r.DBA }} | CleanBite</title>
+  <title>{{ restaurant["DBA"] if restaurant else "Restaurant Details" }} | CleanBite</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-</head>
-<body class="bg-light">
-  <div class="container mt-4">
-    <a href="/restaurants" class="btn btn-outline-secondary mb-3">← Back to list</a>
-    <div class="card p-4 shadow-sm">
-      <h2>{{ r.DBA }}</h2>
-      <p><strong>Borough:</strong> {{ r.BORO or 'N/A' }}</p>
-      <p><strong>Cuisine:</strong> {{ r['CUISINE DESCRIPTION'] or 'N/A' }}</p>
-      <p><strong>Grade:</strong> {{ r.GRADE or 'Not graded' }}</p>
-      <p><strong>Inspection Date:</strong> {{ r['INSPECTION DATE'] or 'N/A' }}</p>
-      <p><strong>Violation Description:</strong> {{ r['VIOLATION DESCRIPTION'] or 'No violations found' }}</p>
-      <p><strong>Address:</strong> {{ r['BUILDING'] }} {{ r['STREET'] }}, {{ r['ZIPCODE'] }}</p>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      overflow-x: hidden;
+      font-family: 'Arial', sans-serif;
+    }
 
-      {% if r['Latitude'] and r['Longitude'] %}
-        <p><strong>Coordinates:</strong> {{ r['Latitude'] }}, {{ r['Longitude'] }}</p>
-      {% endif %}
+    .navbar-dark {
+      background-color: #2a3d3d !important;
+    }
+
+    .main-card {
+      max-width: 1200px;
+      margin: 30px auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px 40px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+    }
+
+    .restaurant-title {
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #212529;
+    }
+
+    .grade-stamp img {
+      width: 85px;
+      height: 85px;
+      object-fit: contain;
+    }
+
+    .grade-stamp p {
+      font-weight: 500;
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    .section-box {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 15px 20px;
+      background-color: #fdfdfd;
+      height: 100%;
+    }
+
+    .section-title {
+      font-weight: 600;
+      color: #2a3d3d;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 0.75rem;
+      padding-bottom: 4px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.4rem;
+    }
+
+    .info-row strong {
+      flex: 0 0 180px;
+      text-align: left;
+      color: #333;
+    }
+
+    .info-value {
+      flex: 1;
+      text-align: left;
+      word-break: break-word;
+    }
+
+    .critical-box {
+      border-color: #b02a37;
+      background-color: #fde9eb;
+    }
+
+    .btn-outline-primary {
+      border-radius: 8px;
+    }
+
+    @media (max-width: 992px) {
+      .main-card {
+        padding: 20px;
+      }
+      .restaurant-title {
+        font-size: 1.3rem;
+      }
+      .grade-stamp img {
+        width: 65px;
+        height: 65px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold text-uppercase" href="/">CleanBite</a>
+      <div>
+        <a class="nav-link text-light" href="/restaurants">View Restaurants</a>
+      </div>
     </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-card">
+    {% if not restaurant %}
+      <div class="alert alert-warning text-center">Restaurant data not found.</div>
+    {% else %}
+      <div class="header-section">
+        <h2 class="restaurant-title">{{ restaurant["DBA"] }}</h2>
+        <div class="grade-stamp text-center">
+          <img src="{{ url_for('static', filename=grade_img) }}" alt="Grade Stamp">
+          <p>Grade: {{ restaurant["GRADE"] or "N/A" }}</p>
+        </div>
+      </div>
+
+      <!-- TOP ROW -->
+      <div class="row g-4">
+        <!-- Location -->
+        <div class="col-md-4">
+          <div class="section-box">
+            <div class="section-title">Location</div>
+            <p class="info-row">
+              <strong>Address:</strong> 
+              <span class="info-value">{{ restaurant["BUILDING"] or "" }} {{ restaurant["STREET"] or "" }}, {{ restaurant["BORO"] or "" }} {{ restaurant["ZIPCODE"] or "" }}</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Contact + Cuisine -->
+        <div class="col-md-4">
+          <div class="section-box">
+            <div class="section-title">Contact & Cuisine</div>
+            <p class="info-row">
+              <strong>Phone:</strong> 
+              <span class="info-value">{{ restaurant["PHONE"] or "This Data is Not Available yet" }}</span>
+            </p>
+            <p class="info-row">
+              <strong>Cuisine:</strong> 
+              <span class="info-value">{{ restaurant["CUISINE DESCRIPTION"] or "This Data is Not Available yet" }}</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Inspection Details -->
+        <div class="col-md-4">
+          <div class="section-box">
+            <div class="section-title">Inspection Details</div>
+            <p class="info-row">
+              <strong>Date:</strong> 
+              <span class="info-value">{{ restaurant["INSPECTION DATE"] or "This Data is Not Available yet" }}</span>
+            </p>
+            <p class="info-row">
+              <strong>Type:</strong> 
+              <span class="info-value">{{ restaurant["INSPECTION TYPE"] or "This Data is Not Available yet" }}</span>
+            </p>
+            <p class="info-row">
+              <strong>Action:</strong> 
+              <span class="info-value">{{ restaurant["ACTION"] or "This Data is Not Available yet" }}</span>
+            </p>
+            <p class="info-row">
+              <strong>Score:</strong> 
+              <span class="info-value">{{ restaurant["SCORE"] or "This Data is Not Available yet" }}</span>
+            </p>
+            <p class="info-row">
+              <strong>Grade Date:</strong> 
+              <span class="info-value">{{ restaurant["GRADE DATE"] or "This Data is Not Available yet" }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIOLATION DETAILS -->
+      <div class="row mt-4">
+        <div class="col-12">
+          <div class="section-box {% if restaurant['CRITICAL FLAG'] == 'Critical' %}critical-box{% endif %}">
+            <div class="section-title">Violation Information</div>
+            <p class="info-row">
+              <strong>Violation Code:</strong>
+              <span class="info-value">
+                {% if not restaurant["VIOLATION CODE"] or "NaN" in restaurant["VIOLATION CODE"] %}
+                  This Data is Not Available yet
+                {% else %}
+                  {{ restaurant["VIOLATION CODE"] }}
+                {% endif %}
+              </span>
+            </p>
+            <p class="info-row">
+              <strong>Violation Description:</strong>
+              <span class="info-value">
+                {% if not restaurant["VIOLATION DESCRIPTION"] or "NaN" in restaurant["VIOLATION DESCRIPTION"] %}
+                  {% if restaurant["ACTION"] and "No violations" in restaurant["ACTION"] %}
+                    No Violations Recorded
+                  {% else %}
+                    This Data is Not Available yet
+                  {% endif %}
+                {% else %}
+                  {{ restaurant["VIOLATION DESCRIPTION"] }}
+                {% endif %}
+              </span>
+            </p>
+            <p class="info-row">
+              <strong>Critical Flag:</strong>
+              <span class="info-value">{{ restaurant["CRITICAL FLAG"] or "This Data is Not Available yet" }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center mt-4">
+        <a href="/restaurants" class="btn btn-outline-primary">
+          <i class="bi bi-arrow-left"></i> Back to Restaurants
+        </a>
+      </div>
+    {% endif %}
   </div>
+
 </body>
 </html>

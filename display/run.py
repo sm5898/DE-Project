@@ -6,7 +6,7 @@ logger = logging.getLogger("py4j")
 logger.setLevel(logging.ERROR)
 
 os.environ["SPARK_LOCAL_HOSTNAME"] = "localhost"
-os.environ["HADOOP_OPTIONAL_TOOLS"] = ""
+# os.environ["HADOOP_OPTIONAL_TOOLS"] = ""
 
 logging.getLogger('werkzeug').setLevel(logging.INFO)
 os.environ["PYSPARK_SILENCE_STDOUT"] = "1"
@@ -14,7 +14,7 @@ os.environ["PYSPARK_SILENCE_SCALA_STDOUT"] = "1"
 
 os.environ['PYSPARK_PYTHON'] = sys.executable
 os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
-os.environ['HADOOP_HOME'] = 'C:\\hadoop'
+# os.environ['HADOOP_HOME'] = 'C:\\hadoop'
 
 from flask import Flask, render_template, request
 import pandas as pd
@@ -76,7 +76,7 @@ def create_spark():
     )
 
     spark.sparkContext.setLogLevel("ERROR")
-    spark.sparkContext.setSystemProperty("hadoop.home.dir", "C:\\hadoop")
+    # spark.sparkContext.setSystemProperty("hadoop.home.dir", "C:\\hadoop")
     return spark
 
 # Create Spark globally only once
@@ -186,19 +186,54 @@ def view_restaurants():
 
 @app.route("/restaurant/<camis>")
 def restaurant_detail(camis):
-    """
-    Display details for a single restaurant using its CAMIS (unique restaurant ID).
-    """
-    single_df = df.filter(col("CAMIS") == camis)
-    data = single_df.limit(1).toPandas().to_dict(orient="records")
+    try:
+        restaurant_df = (
+            df.filter(col("CAMIS") == camis)
+              .select(
+                  "CAMIS", "DBA", "BORO", "BUILDING", "STREET", "ZIPCODE", "PHONE",
+                  "CUISINE DESCRIPTION", "INSPECTION DATE", "ACTION",
+                  "VIOLATION CODE", "VIOLATION DESCRIPTION", "CRITICAL FLAG",
+                  "SCORE", "GRADE", "GRADE DATE", "INSPECTION TYPE",
+                  "Latitude", "Longitude"
+              )
+              .limit(1)
+              .toPandas()
+        )
 
-    if not data:
-        return f"<h3>No restaurant found with CAMIS {camis}</h3>"
+        if restaurant_df.empty:
+            return render_template("restaurant_detail.html", restaurant=None)
 
-    restaurant = data[0]
-    return render_template("restaurant_detail.html", r=restaurant)
+        restaurant = restaurant_df.to_dict(orient="records")[0]
 
+        def sanitize(value):
+            if isinstance(value, dict) and "$numberDouble" in value:
+                return None
+            if isinstance(value, float) and (value != value):  # NaN check
+                return None
+            return value
 
+        restaurant = {k: sanitize(v) for k, v in restaurant.items()}
+
+        # Pick correct grade stamp
+        grade_val = restaurant.get("GRADE", "N/A")
+        grade_map = {
+            "A": "A.jpeg",
+            "B": "B.jpeg",
+            "C": "C.jpeg",
+            "Z": "pending.jpeg",
+            "N/A": "pending.jpeg"
+        }
+        grade_img = grade_map.get(str(grade_val).upper(), "pending.jpeg")
+
+        return render_template(
+            "restaurant_detail.html",
+            restaurant=restaurant,
+            grade_img=grade_img
+        )
+
+    except Exception as e:
+        print("Error in /restaurant route:", e)
+        return render_template("restaurant_detail.html", restaurant=None)
 
 
 # --------------------------
