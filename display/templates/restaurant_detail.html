@@ -163,67 +163,92 @@
           </div>
         </div>
 
-        <!-- Inspection Details -->
-        <div class="col-md-4">
-          <div class="section-box">
-            <div class="section-title">Inspection Details</div>
-            <p class="info-row">
-              <strong>Date:</strong> 
-              <span class="info-value">{{ restaurant["INSPECTION DATE"] or "This Data is Not Available yet" }}</span>
-            </p>
-            <p class="info-row">
-              <strong>Type:</strong> 
-              <span class="info-value">{{ restaurant["INSPECTION TYPE"] or "This Data is Not Available yet" }}</span>
-            </p>
-            <p class="info-row">
-              <strong>Action:</strong> 
-              <span class="info-value">{{ restaurant["ACTION"] or "This Data is Not Available yet" }}</span>
-            </p>
-            <p class="info-row">
-              <strong>Score:</strong> 
-              <span class="info-value">{{ restaurant["SCORE"] or "This Data is Not Available yet" }}</span>
-            </p>
-            <p class="info-row">
-              <strong>Grade Date:</strong> 
-              <span class="info-value">{{ restaurant["GRADE DATE"] or "This Data is Not Available yet" }}</span>
-            </p>
-          </div>
-        </div>
-      </div>
 
+      <!-- Latest Inspection Details
+      <div class="col-md-4">
+        <div class="section-box">
+          <div class="section-title">Latest Inspection Details</div>
+          <p class="info-row">
+            <strong>Date:</strong> 
+            <span class="info-value">{{ restaurant["INSPECTION DATE"] or "This Data is Not Available yet" }}</span>
+          </p>
+          <p class="info-row">
+            <strong>Type:</strong> 
+            <span class="info-value">{{ restaurant["INSPECTION TYPE"] or "This Data is Not Available yet" }}</span>
+          </p>
+          <p class="info-row">
+            <strong>Action:</strong> 
+            <span class="info-value">{{ restaurant["ACTION"] or "This Data is Not Available yet" }}</span>
+          </p>
+          <p class="info-row">
+            <strong>Score:</strong> 
+            <span class="info-value">{{ restaurant["SCORE"] or "This Data is Not Available yet" }}</span>
+          </p>
+          <p class="info-row">
+            <strong>Grade Date:</strong> 
+            <span class="info-value">{{ restaurant["GRADE DATE"] or "This Data is Not Available yet" }}</span>
+          </p>
+        </div>
+      </div> -->
+   
       <!-- VIOLATION DETAILS -->
       <div class="row mt-4">
         <div class="col-12">
-          <div class="section-box {% if restaurant['CRITICAL FLAG'] == 'Critical' %}critical-box{% endif %}">
-            <div class="section-title">Violation Information</div>
-            <p class="info-row">
-              <strong>Violation Code:</strong>
-              <span class="info-value">
-                {% if not restaurant["VIOLATION CODE"] or "NaN" in restaurant["VIOLATION CODE"] %}
-                  This Data is Not Available yet
-                {% else %}
-                  {{ restaurant["VIOLATION CODE"] }}
-                {% endif %}
-              </span>
-            </p>
-            <p class="info-row">
-              <strong>Violation Description:</strong>
-              <span class="info-value">
-                {% if not restaurant["VIOLATION DESCRIPTION"] or "NaN" in restaurant["VIOLATION DESCRIPTION"] %}
-                  {% if restaurant["ACTION"] and "No violations" in restaurant["ACTION"] %}
-                    No Violations Recorded
-                  {% else %}
-                    This Data is Not Available yet
-                  {% endif %}
-                {% else %}
-                  {{ restaurant["VIOLATION DESCRIPTION"] }}
-                {% endif %}
-              </span>
-            </p>
-            <p class="info-row">
-              <strong>Critical Flag:</strong>
-              <span class="info-value">{{ restaurant["CRITICAL FLAG"] or "This Data is Not Available yet" }}</span>
-            </p>
+          <div class="section-box">
+            <div class="section-title">Violation History</div>
+
+            {% if restaurant.VIOLATIONS and restaurant.VIOLATIONS|length > 0 %}
+              {% for v in restaurant.VIOLATIONS %}
+                <div class="violation-entry mb-3 p-3 border rounded {% if v['CRITICAL FLAG'] == 'Critical' %}bg-danger-subtle border-danger{% else %}bg-light{% endif %}">
+                  <p class="info-row">
+                    <strong>Inspection Date:</strong>
+                    <span class="info-value">{{ v["INSPECTION DATE"] or "This Data is Not Available yet" }}</span>
+                  </p>
+                  <p class="info-row">
+                    <strong>Action:</strong>
+                    <span class="info-value">{{ v["ACTION"] or "This Data is Not Available yet" }}</span>
+                  </p>
+                  <p class="info-row">
+                    <strong>Violation Code:</strong>
+                    <span class="info-value">
+                      {% if not v["VIOLATION CODE"] or "NaN" in v["VIOLATION CODE"] %}
+                        This Data is Not Available yet
+                      {% else %}
+                        {{ v["VIOLATION CODE"] }}
+                      {% endif %}
+                    </span>
+                  </p>
+                  <p class="info-row">
+                    <strong>Violation Description:</strong>
+                    <span class="info-value">
+                      {% if not v["VIOLATION DESCRIPTION"] or "NaN" in v["VIOLATION DESCRIPTION"] %}
+                        {% if v["ACTION"] and "No violations" in v["ACTION"] %}
+                          No Violations Recorded
+                        {% else %}
+                          This Data is Not Available yet
+                        {% endif %}
+                      {% else %}
+                        {{ v["VIOLATION DESCRIPTION"] }}
+                      {% endif %}
+                    </span>
+                  </p>
+                  <p class="info-row">
+                    <strong>Critical Flag:</strong>
+                    <span class="info-value">{{ v["CRITICAL FLAG"] or "This Data is Not Available yet" }}</span>
+                  </p>
+                  <p class="info-row">
+                    <strong>Score:</strong>
+                    <span class="info-value">{{ v["SCORE"] or "This Data is Not Available yet" }}</span>
+                  </p>
+                  <p class="info-row">
+                    <strong>Inspection Type:</strong>
+                    <span class="info-value">{{ v["INSPECTION TYPE"] or "This Data is Not Available yet" }}</span>
+                  </p>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-muted">This Data is Not Available yet</p>
+            {% endif %}
           </div>
         </div>
       </div>

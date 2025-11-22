@@ -134,6 +134,12 @@
             padding: 10px 15px; 
             flex-grow: 1;
         }
+
+        .restaurant-card:hover {
+            background-color: #f9f9f9;
+            transform: scale(1.01);
+            transition: all 0.2s ease;
+        }
     </style>
 </head>
 <body>
@@ -144,9 +150,9 @@
         <form class="col-lg-6 col-md-8 me-4 ms-0" method="get" action="/restaurants">
             
             <div class="input-group">
-                <input type="text" class="form-control" name="query" 
-                       placeholder="Search by Restaurant Name, Cuisine, or Address..."
-                       value="{{ search_query or '' }}">
+                <input type="text" class="form-control" name="search"
+                        placeholder="Search by Restaurant Name, Cuisine, or Address..."
+                        value="{{ search or '' }}">
                 
                 {# Hidden fields to preserve existing filters #}
                 {% if borough %} <input type="hidden" name="borough" value="{{ borough }}"> {% endif %}
@@ -230,15 +236,14 @@
                         {% elif grade_val == 'Z' %}{% set grade_img_src = 'pending.jpeg' %}
                         {% endif %}
 
-                        <div class="card restaurant-card shadow-sm">
+                        <a href="/restaurant/{{ rest.CAMIS }}" class="text-decoration-none text-dark" style="display:block;">
+                        <div class="card restaurant-card shadow-sm" style="cursor:pointer;">
                             <div class="row g-0 restaurant-row">
                                 <div class="col-10">
                                     <div class="card-body py-2 px-3 card-body-centered">
-                                        <a href="/restaurant/{{ rest.CAMIS }}" class="text-decoration-none text-dark">
                                         <h6 class="card-title card-title-dba text-truncate mb-1">{{ rest.DBA | replace('**', '') }}</h6>
-                                        </a>
                                         <p class="card-text text-muted small mb-1">
-                                        {{ rest['CUISINE DESCRIPTION'] or rest.CUISINE_DESCRIPTION }} | {{ rest.BORO }}
+                                            {{ rest['CUISINE DESCRIPTION'] or rest.CUISINE_DESCRIPTION }} | {{ rest.BORO }}
                                         </p>
                                         <p class="card-text text-truncate small mb-0">
                                             {{ rest.BUILDING }} {{ rest.STREET }}
@@ -352,7 +357,9 @@
                         return L.marker(ll, { icon })
                         .addTo(map)
                         .bindPopup(`
-                            <strong>${title}</strong><br/>
+                            <strong><a href="/restaurant/${obj.CAMIS}" target="_blank" style="text-decoration:none;color:#003399;">
+                                ${title}
+                            </a></strong><br/>
                             Cuisine: ${cuisine}<br/>
                             Grade: ${grade}
                         `);
