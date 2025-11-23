@@ -236,7 +236,7 @@
                         {% elif grade_val == 'Z' %}{% set grade_img_src = 'pending.jpeg' %}
                         {% endif %}
 
-                        <a href="/restaurant/{{ rest.CAMIS }}" class="text-decoration-none text-dark" style="display:block;">
+                        <a href="/restaurant/${obj.camis || obj.CAMIS}" class="text-decoration-none text-dark" style="display:block;">
                         <div class="card restaurant-card shadow-sm" style="cursor:pointer;">
                             <div class="row g-0 restaurant-row">
                                 <div class="col-10">
@@ -357,7 +357,7 @@
                         return L.marker(ll, { icon })
                         .addTo(map)
                         .bindPopup(`
-                            <strong><a href="/restaurant/${obj.CAMIS}" target="_blank" style="text-decoration:none;color:#003399;">
+                            <strong><a href="/restaurant/${obj.camis || obj.CAMIS}" target="_blank" style="text-decoration:none;color:#003399;">
                                 ${title}
                             </a></strong><br/>
                             Cuisine: ${cuisine}<br/>
