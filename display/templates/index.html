@@ -236,7 +236,7 @@
                         {% elif grade_val == 'Z' %}{% set grade_img_src = 'pending.jpeg' %}
                         {% endif %}
 
-                        <a href="/restaurant/${obj.camis || obj.CAMIS}" class="text-decoration-none text-dark" style="display:block;">
+                        <a href="/restaurant/{{ rest.CAMIS or rest.camis }}" class="text-decoration-none text-dark" style="display:block;">
                         <div class="card restaurant-card shadow-sm" style="cursor:pointer;">
                             <div class="row g-0 restaurant-row">
                                 <div class="col-10">
