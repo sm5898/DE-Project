@@ -180,7 +180,7 @@ def view_restaurants():
         nta_codes = []
 
         # --- Load JSON Mapping ---
-        nta_path = "display/data/nta_mapping.json"
+        nta_path = os.path.join(PROJECT_ROOT, "data", "nta_mapping.json")
         # if os.path.exists(nta_path):
         with open(nta_path, "r", encoding="utf-8") as f:
             nta_json = json.load(f)
@@ -206,7 +206,7 @@ def view_restaurants():
                 F.upper(F.col("CUISINE DESCRIPTION")).contains(search)
             )
 
-    #  impleent neighborhood and zip filter if needed
+    #  implement neighborhood and zip filter if needed
     # if neighborhood:
     #     nta_path = os.path.join("data", "nta_mapping.csv")
     #     if os.path.exists(nta_path):
