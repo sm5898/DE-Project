@@ -29,8 +29,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 25px;
+      margin-bottom: 10px; /* reduce spacing below header */
+      padding-bottom: 0;
     }
 
     .restaurant-title {
@@ -39,18 +39,20 @@
       color: #212529;
     }
 
+    .grade-stamp {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0;     /* reduce unnecessary top spacing */
+    }
+
     .grade-stamp img {
-      width: 85px;
-      height: 85px;
+      width: 220px;
+      height: 220px;
       object-fit: contain;
     }
 
-    .grade-stamp p {
-      font-weight: 500;
-      color: #6c757d;
-      font-size: 0.9rem;
-      margin-top: 4px;
-    }
 
     .section-box {
       border: 1px solid #dee2e6;
@@ -98,7 +100,7 @@
 
     @media (max-width: 992px) {
       .main-card {
-        padding: 20px;
+        padding-top: 20px !important; /* was too large by default */
       }
       .restaurant-title {
         font-size: 1.3rem;
@@ -131,7 +133,6 @@
         <h2 class="restaurant-title">{{ restaurant["DBA"] }}</h2>
         <div class="grade-stamp text-center">
           <img src="{{ url_for('static', filename=grade_img) }}" alt="Grade Stamp">
-          <p>Grade: {{ restaurant["LATEST GRADE"] or "N/A" }}</p>
         </div>
       </div>
 
