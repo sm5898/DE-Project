@@ -1,26 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>CleanBite | Home</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <meta charset="UTF-8">
+    <title>CleanBite | Home</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Define custom colors and font */
+        :root {
+            --cb-dark-green: #1A5338;
+            --cb-header-bg: #28443B; 
+            --cb-button-hover: #133d29; 
+            --cb-gray-bg: #f5f5f5; 
+            --cb-main-action-hover-bg: #2d6b4d; 
+        }
+
+        body {
+            background-color: var(--cb-gray-bg);
+            font-family: 'Lora', serif;
+        }
+
+        /* Header Styling */
+        .navbar {
+            background-color: var(--cb-header-bg) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: white !important;
+            font-size: 1.5rem; 
+        }
+        
+        .navbar-logo-img {
+            display: none; 
+        }
+
+        /* Main Content Area Styling */
+        .main-content-area {
+            max-width: 550px; 
+            margin-top: 100px;
+            width: 100%;
+        }
+
+        /* UPDATED: Increased Central Logo Size */
+        .logo-display {
+            width: 200px; /* Set size of the central logo (increased from 150px) */
+            height: auto;
+            margin-bottom: 20px;
+        }
+        
+        /* Typography */
+        .display-5 {
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 15px;
+        }
+        .lead {
+            color: #495057;
+            margin-bottom: 30px;
+        }
+
+        /* Button Styling */
+        .btn-main-action {
+            background-color: var(--cb-dark-green);
+            border-color: var(--cb-dark-green);
+            font-weight: 500;
+            padding: 10px 25px;
+            transition: all 0.2s ease;
+            /* Explicitly ensuring text is white */
+            color: white !important; 
+        }
+        .btn-main-action:hover {
+            background-color: var(--cb-main-action-hover-bg); 
+            border-color: var(--cb-main-action-hover-bg);
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 10px rgba(26, 83, 56, 0.3);
+            color: white !important;
+        }
+    </style>
 </head>
 <body class="bg-light">
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="/">CleanBite</a>
-      <div>
-        <a class="nav-link text-light" href="/restaurants">View Restaurants</a>
-      </div>
-    </div>
-  </nav>
+    
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                CleanBite
+            </a>
+            <div>
+                </div>
+        </div>
+    </nav>
 
-  <div class="container text-center mt-5">
-    <h1 class="display-5">Welcome to CleanBite</h1>
-    <p class="lead mt-3">
-      Discover the most hygienic dining options in NYC using real inspection data.
-    </p>
-    <a href="/restaurants" class="btn btn-primary mt-4">View Restaurant Data</a>
-  </div>
+    <div class="container d-flex justify-content-center">
+        <div class="text-center main-content-area">
+            
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="CleanBite Logo" class="logo-display">
+            
+            <h1 class="display-5">Welcome to CleanBite</h1>
+            <p class="lead">
+                Discover the most hygienic dining options in NYC using real inspection data.
+            </p>
+            <a href="/restaurants" class="btn btn-main-action btn-lg">View Restaurant Data</a>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
