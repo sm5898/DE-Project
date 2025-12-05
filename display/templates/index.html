@@ -147,7 +147,7 @@
 <header class="container-fluid bg-white p-3 mb-4 border-bottom">
     <div class="d-flex justify-content-between align-items-center container">
         
-        <form class="col-lg-6 col-md-8 me-4 ms-0" method="get" action="/restaurants">
+        <form class="col-lg-7 col-md-8 me-4 ms-0" method="get" action="/restaurants">
             
             <div class="input-group">
                 <input type="text" class="form-control" name="search"
@@ -159,7 +159,7 @@
                 {% if cuisine %} <input type="hidden" name="cuisine" value="{{ cuisine }}"> {% endif %}
                 {% if grade %} <input type="hidden" name="grade" value="{{ grade }}"> {% endif %}
                 
-                <button type="submit" class="btn btn-primary">Search</button>
+                <button type="submit" style="background-color:#0D261C; color:white; border:none;" class="btn btn-primary">Search</button>
             </div>
         </form>
         
