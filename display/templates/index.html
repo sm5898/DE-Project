@@ -75,6 +75,30 @@
                 font-weight: 600;
                 padding: 12px;
             }
+            .filter-chip {
+                background-color: #2a3d3d;
+                color: #ced4da;
+                font-weight: 600;
+                padding: 10px 16px;
+                border-radius: 10px;
+                margin-right: 8px;
+                cursor: pointer;
+                border: 1px solid #2a3d3d;
+                transition: 0.2s ease;
+                display: inline-block;
+            }
+
+            .filter-chip:hover {
+                background-color: #3a4d4d;
+                color: #fff;
+            }
+
+            .filter-chip-active {
+                background-color: #28a745 !important;
+                color: white !important;
+                border-color: #28a745 !important;
+            }
+
         </style>
     </head>
 
@@ -115,7 +139,7 @@
                         <input type="hidden" name="grade" value="{{ g }}">
                     {% endfor %}
 
-                    <button class="btn btn-primary px-4">Search</button>
+                    <button class="btn btn-primary px-4" style="background-color:#0D261C; color:white; border:none;">Search</button>
                 </div>
             </form>
 
@@ -192,8 +216,15 @@
                     {% set boroughs = ['Manhattan','Queens','Brooklyn','Bronx','Staten Island'] %}
                     {% for b in boroughs %}
                         {% set active = borough and b.upper() in borough|map('upper')|list %}
-                        <label class="filter-chip {{ 'active' if active }}">
-                            <input type="checkbox" name="borough" value="{{ b }}" hidden {{ 'checked' if active }}>
+                        <label class="filter-chip {% if active %}filter-chip-active{% endif %}">
+                            <input 
+                                type="checkbox" 
+                                name="borough" 
+                                value="{{ b }}" 
+                                hidden 
+                                {% if active %}checked{% endif %} 
+                                onchange="toggleChip(this)"
+                            >
                             {{ b }}
                         </label>
                     {% endfor %}
@@ -205,10 +236,18 @@
                     {% set cuisines = ['Italian','Japanese','Indian','American','Chinese','Mexican'] %}
                     {% for c in cuisines %}
                         {% set active = cuisine and c.upper() in cuisine|map('upper')|list %}
-                        <label class="filter-chip {{ 'active' if active }}">
-                            <input type="checkbox" name="cuisine" value="{{ c }}" hidden {{ 'checked' if active }}>
+                        <label class="filter-chip {% if active %}filter-chip-active{% endif %}">
+                            <input 
+                                type="checkbox" 
+                                name="cuisine" 
+                                value="{{ c }}" 
+                                hidden 
+                                {% if active %}checked{% endif %} 
+                                onchange="toggleChip(this)"
+                            >
                             {{ c }}
                         </label>
+
                     {% endfor %}
                 </div>
 
@@ -217,10 +256,18 @@
                 <div>
                     {% for g in ['A','B','C','Z'] %}
                         {% set active = grade and g.upper() in grade|map('upper')|list %}
-                        <label class="filter-chip {{ 'active' if active }}">
-                            <input type="checkbox" name="grade" value="{{ g }}" hidden {{ 'checked' if active }}>
+                        <label class="filter-chip {% if active %}filter-chip-active{% endif %}">
+                            <input 
+                                type="checkbox" 
+                                name="grade" 
+                                value="{{ g }}" 
+                                hidden 
+                                {% if active %}checked{% endif %} 
+                                onchange="toggleChip(this)"
+                            >
                             {{ g }}
                         </label>
+
                     {% endfor %}
                 </div>
 
@@ -323,5 +370,17 @@
                 })();
             });
         </script>
+        <script>
+            function toggleChip(checkbox) {
+                const label = checkbox.parentElement;
+
+                if (checkbox.checked) {
+                    label.classList.add("filter-chip-active");
+                } else {
+                    label.classList.remove("filter-chip-active");
+                }
+            }
+        </script>
+
 </body>
 </html>
