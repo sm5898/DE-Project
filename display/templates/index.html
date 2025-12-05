@@ -167,134 +167,163 @@
     </div>
 </header> 
 
-    <div class="container main-container-box">
-        <div class="row">
-            
+                    <!-- Preserve active filters -->
+                    {% for b in borough or [] %}
+                        <input type="hidden" name="borough" value="{{ b }}">
+                    {% endfor %}
+                    {% for c in cuisine or [] %}
+                        <input type="hidden" name="cuisine" value="{{ c }}">
+                    {% endfor %}
+                    {% for g in grade or [] %}
+                        <input type="hidden" name="grade" value="{{ g }}">
+                    {% endfor %}
+
+                    <button class="btn btn-primary px-4" style="background-color:#0D261C; color:white; border:none;">Search</button>
+                </div>
+            </form>
+
+            <h2 class="fw-bold mb-0">CleanBite</h2>
+
+            <button class="btn btn-outline-secondary" data-bs-toggle="offcanvas" data-bs-target="#filterPanel">
+                <i class="bi bi-sliders"></i> Filters
+            </button>
+
+        </div>
+    </header>
+
+
+    <!-- MAIN LAYOUT -->
+    <div class="container mt-4">
+        <div class="main-container row g-4">
+
+            <!-- MAP LEFT -->
             <div class="col-md-7">
                 <div id="map"></div>
             </div>
 
+            <!-- LIST RIGHT -->
             <div class="col-md-5">
+                <h5 class="mb-3">Restaurant List (Showing up to 100 results)</h5>
 
-                <h6 class="mt-0 mb-3 text-muted">Boroughs</h6>
-                <div class="filter-scroll-container mb-4">
-                    <div class="d-flex filter-no-wrap">
-                        {# Preserve other filters: cuisine, grade #}
-                        {% set current_other_params = '&cuisine=' + cuisine if cuisine else '' %}
-                        {% set current_other_params = current_other_params + ('&grade=' + grade if grade else '') %}
-                        
-                        {% set boroughs = ['Manhattan', 'Queens', 'Brooklyn', 'Bronx', 'Staten Island'] %}
-                        {% for boro in boroughs %}
-                            <a href="/restaurants?borough={{ boro }}{{ current_other_params }}" 
-                               class="quick-filter-button {% if borough and borough|lower == boro|lower %}filter-active{% endif %}">
-                               {{ boro }}
-                            </a>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <h6 class="mt-4 mb-3 text-muted">Cuisine</h6>
-                <div class="filter-scroll-container mb-4">
-                    <div class="d-flex filter-no-wrap">
-                        {# Preserve other filters: borough, grade #}
-                        {% set current_other_params = '&borough=' + borough if borough else '' %}
-                        {% set current_other_params = current_other_params + ('&grade=' + grade if grade else '') %}
-                        
-                        {% set cuisines = ['Italian', 'Japanese', 'Indian', 'American', 'Chinese', 'Mexican'] %}
-                        {% for c in cuisines %}
-                            <a href="/restaurants?cuisine={{ c }}{{ current_other_params }}" 
-                               class="quick-filter-button {% if cuisine and cuisine|lower == c|lower %}filter-active{% endif %}">
-                               {{ c }}
-                            </a>
-                        {% endfor %}
-                    </div>
-                </div>
-                
-                <div class="row mb-4 g-2">
-                    <div class="col-6">
-                        <a href="/restaurants" class="btn btn-outline-danger w-100">
-                            <i class="bi bi-x-circle"></i> Clear Filters
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <button class="btn btn-outline-secondary w-100" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilters" aria-controls="offcanvasFilters">
-                            <i class="bi bi-sliders"></i> More Filters
-                        </button>
-                    </div>
-                </div>
-                <h6 class="mt-4 mb-3 text-muted border-top pt-3">Restaurant List (Showing up to 100 results)</h6>
-                
-                <div class="restaurant-list-container" style="max-height: 680px; overflow-y: auto;">
+                <div class="restaurant-list">
                     {% for rest in data %}
                         {% set grade_val = rest.GRADE or 'N/A' %}
-                        
-                        {# Logic to set the image path #}
-                        {% set grade_img_src = 'pending.jpeg' %}
-                        {% if grade_val == 'A' %}{% set grade_img_src = 'A.jpeg' %}
-                        {% elif grade_val == 'B' %}{% set grade_img_src = 'B.jpeg' %}
-                        {% elif grade_val == 'C' %}{% set grade_img_src = 'C.jpeg' %}
-                        {% elif grade_val == 'Z' %}{% set grade_img_src = 'pending.jpeg' %}
+                        {% set grade_img = 'pending.jpeg' %}
+                        {% if grade_val == "A" %}{% set grade_img = 'A.jpeg' %}
+                        {% elif grade_val == "B" %}{% set grade_img = 'B.jpeg' %}
+                        {% elif grade_val == "C" %}{% set grade_img = 'C.jpeg' %}
                         {% endif %}
 
-                        <a href="/restaurant/{{ rest.CAMIS or rest.camis }}" class="text-decoration-none text-dark" style="display:block;">
-                        <div class="card restaurant-card shadow-sm" style="cursor:pointer;">
-                            <div class="row g-0 restaurant-row">
-                                <div class="col-10">
-                                    <div class="card-body py-2 px-3 card-body-centered">
-                                        <h6 class="card-title card-title-dba text-truncate mb-1">{{ rest.DBA | replace('**', '') }}</h6>
-                                        <p class="card-text text-muted small mb-1">
-                                            {{ rest['CUISINE DESCRIPTION'] or rest.CUISINE_DESCRIPTION }} | {{ rest.BORO }}
-                                        </p>
-                                        <p class="card-text text-truncate small mb-0">
-                                            {{ rest.BUILDING }} {{ rest.STREET }}
-                                        </p>
-                                    </div>
+                        <a href="/restaurant/{{ rest.CAMIS }}" class="text-decoration-none text-dark">
+                            <div class="restaurant-card d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="fw-bold mb-1">{{ rest.DBA }}</h5>
+                                    <small class="text-muted">
+                                        {{ rest['CUISINE DESCRIPTION'] }} | {{ rest.BORO }}
+                                    </small>
+                                    <br>
+                                    <small>{{ rest.BUILDING }} {{ rest.STREET }}</small>
                                 </div>
-                                <div class="col-2 d-flex align-items-center justify-content-center">
-                                    <div class="grade-banner rounded-end">
-                                        <img src="{{ url_for('static', filename=grade_img_src) }}" alt="NYC Restaurant Grade: {{ grade_val }}">
-                                    </div>
+                                <div class="grade-badge">
+                                    <img src="{{ url_for('static', filename=grade_img) }}">
                                 </div>
                             </div>
-                        </div>
-                    {% else %}
-                        <div class="alert alert-info text-center small" role="alert">
-                            No restaurants found matching those filters.
-                        </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- FILTER PANEL (RIGHT SIDE) -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="filterPanel">
+        <div class="offcanvas-header">
+            <h4 class="fw-bold">Filters</h4>
+            <button class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="offcanvas-body">
+
+            <!-- FILTER FORM -->
+            <form method="get" action="/restaurants">
+
+                <!-- Borough Filter -->
+                <h6 class="mt-4 mb-2">Boroughs</h6>
+                <div>
+                    {% set boroughs = ['Manhattan','Queens','Brooklyn','Bronx','Staten Island'] %}
+                    {% for b in boroughs %}
+                        {% set active = borough and b.upper() in borough|map('upper')|list %}
+                        <label class="filter-chip {% if active %}filter-chip-active{% endif %}">
+                            <input 
+                                type="checkbox" 
+                                name="borough" 
+                                value="{{ b }}" 
+                                hidden 
+                                {% if active %}checked{% endif %} 
+                                onchange="toggleChip(this)"
+                            >
+                            {{ b }}
+                        </label>
                     {% endfor %}
                 </div>
 
-            </div>
-        </div>
-    </div>
-    
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasFilters" aria-labelledby="offcanvasFiltersLabel">
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasFiltersLabel">Grade Filters</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-      </div>
-      <div class="offcanvas-body">
+                <!-- Cuisine Filter -->
+                <h6 class="mt-4 mb-2">Cuisine</h6>
+                <div>
+                    {% set cuisines = ['Italian','Japanese','Indian','American','Chinese','Mexican'] %}
+                    {% for c in cuisines %}
+                        {% set active = cuisine and c.upper() in cuisine|map('upper')|list %}
+                        <label class="filter-chip {% if active %}filter-chip-active{% endif %}">
+                            <input 
+                                type="checkbox" 
+                                name="cuisine" 
+                                value="{{ c }}" 
+                                hidden 
+                                {% if active %}checked{% endif %} 
+                                onchange="toggleChip(this)"
+                            >
+                            {{ c }}
+                        </label>
 
-        <h6 class="mt-0 mb-3 text-muted">Filter by Grade</h6>
-        <div class="filter-scroll-container mb-4">
-            <div class="d-flex filter-no-wrap">
-                {# Preserve other filters: cuisine, borough #}
-                {% set current_other_params = '&cuisine=' + cuisine if cuisine else '' %}
-                {% set current_other_params = current_other_params + ('&borough=' + borough if borough else '') %}
-                
-                <a href="/restaurants?grade=A{{ current_other_params }}" class="quick-filter-button {% if grade == 'A' %}filter-active{% endif %}">A Grade</a>
-                <a href="/restaurants?grade=B{{ current_other_params }}" class="quick-filter-button {% if grade == 'B' %}filter-active{% endif %}">B Grade</a>
-                <a href="/restaurants?grade=C{{ current_other_params }}" class="quick-filter-button {% if grade == 'C' %}filter-active{% endif %}">C Grade</a>
-                <a href="/restaurants?grade=Z{{ current_other_params }}" class="quick-filter-button {% if grade == 'Z' %}filter-active{% endif %}">Pending/Z</a>
-            </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Grade Filter -->
+                <h6 class="mt-4 mb-2">Grade</h6>
+                <div>
+                    {% for g in ['A','B','C','Z'] %}
+                        {% set active = grade and g.upper() in grade|map('upper')|list %}
+                        <label class="filter-chip {% if active %}filter-chip-active{% endif %}">
+                            <input 
+                                type="checkbox" 
+                                name="grade" 
+                                value="{{ g }}" 
+                                hidden 
+                                {% if active %}checked{% endif %} 
+                                onchange="toggleChip(this)"
+                            >
+                            {{ g }}
+                        </label>
+
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn apply-btn w-100 mt-4">Apply Filters</button>
+
+                <a href="/restaurants" class="btn btn-outline-danger w-100 mt-2">
+                    Clear All Filters
+                </a>
+
+            </form>
         </div>
-        
-        <div class="d-grid mt-4">
-            <a href="/restaurants" class="btn btn-outline-danger">Clear All Filters</a>
-        </div>
-        
-      </div>
     </div>
+
+
+    <!-- ======================================================= -->
+    <!-- 🌍 MAP SCRIPT -->
+    <!-- ======================================================= -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script>
@@ -380,5 +409,17 @@
                 })();
             });
         </script>
+        <script>
+            function toggleChip(checkbox) {
+                const label = checkbox.parentElement;
+
+                if (checkbox.checked) {
+                    label.classList.add("filter-chip-active");
+                } else {
+                    label.classList.remove("filter-chip-active");
+                }
+            }
+        </script>
+
 </body>
 </html>

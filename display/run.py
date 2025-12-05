@@ -136,6 +136,23 @@ df = (
     )
 )
 
+df = df.withColumn(
+    "LATEST_GRADE",
+    F.expr("""
+        element_at(
+            array_sort(
+                filter(VIOLATIONS, x -> x['GRADE'] IS NOT NULL),
+                (left, right) -> case
+                    when left['GRADE DATE'] > right['GRADE DATE'] then -1
+                    when left['GRADE DATE'] < right['GRADE DATE'] then 1
+                    else 0
+                end
+            ),
+            1
+        )['GRADE']
+    """)
+)
+
 df.limit(1).count()
 
 
@@ -153,58 +170,78 @@ def view_restaurants():
     import pandas as pd
     from pyspark.sql import functions as F
 
-    borough = request.args.get("borough")
-    cuisine = request.args.get("cuisine")
-    grade = request.args.get("grade")
-    neighborhood = request.args.get("neighborhood")
-    zipcode = request.args.get("zipcode")
+    borough = request.args.getlist("borough")
+    cuisine = request.args.getlist("cuisine")
+    grade = request.args.getlist("grade")
+    neighborhood = request.args.getlist("neighborhood")
+    zipcode = request.args.getlist("zipcode")
     search = request.args.get("search")
+    
+    clear_search = request.args.get("clear_search")
+
+    if clear_search == "True":
+        search = None
 
     filtered = df
 
     # --- Filtering logic ---
     if borough:
-        filtered = filtered.filter(F.upper(F.col("BORO")) == borough.upper())
+        borough = [b.upper() for b in borough]   # normalize
+        filtered = filtered.filter(F.upper(F.col("BORO")).isin(borough))
     if cuisine:
-        filtered = filtered.filter(F.upper(F.col("CUISINE DESCRIPTION")) == cuisine.upper())
+        cuisine = [c.upper() for c in cuisine]
+        filtered = filtered.filter(F.upper(F.col("CUISINE DESCRIPTION")).isin(cuisine))
     if grade:
-        if grade.upper() == "Z":
+        grade = [g.upper() for g in grade]
+
+        if "Z" in grade:
             filtered = filtered.filter(
-                (F.upper(F.col("GRADE")) == "Z") | F.col("GRADE").isNull()
+                (F.col("LATEST_GRADE") == "Z") | F.col("LATEST_GRADE").isNull()
             )
         else:
-            filtered = filtered.filter(F.upper(F.col("GRADE")) == grade.upper())
+            filtered = filtered.filter(F.col("LATEST_GRADE").isin(grade))
+
+    # ----------------------------------------
+    # SEARCH LOGIC (does not override filters)
+    # ----------------------------------------
+    search_tokens = []
 
     if search:
-        search = search.strip().upper()
+        search_upper = search.strip().upper()
+        search_tokens.append(search_upper)
+
         nta_codes = []
 
-        # --- Load JSON Mapping ---
+        # Load NTA map
         nta_path = os.path.join(PROJECT_ROOT, "data", "nta_mapping.json")
-        # if os.path.exists(nta_path):
         with open(nta_path, "r", encoding="utf-8") as f:
             nta_json = json.load(f)
 
-        # Reverse map to find NTA codes from neighborhood names
+        # Check if search matches a neighborhood (NTA)
         for code, name in nta_json.items():
-            if search in name.upper():
+            if search_upper in name.upper():
                 nta_codes.append(code.upper())
 
-        # --- Apply filter in order of specificity ---
-        if search.isdigit():
-            # ZIP search
-            filtered = filtered.filter(F.col("ZIPCODE").cast("string") == search)
-        elif nta_codes:
-            # NTA-based neighborhood search
+        search_interpreted_as_neighborhood = len(nta_codes) > 0
+
+        # ZIPCODE search
+        if search_upper.isdigit():
+            filtered = filtered.filter(F.col("ZIPCODE").cast("string") == search_upper)
+
+        # Neighborhood search
+        elif search_interpreted_as_neighborhood:
             filtered = filtered.filter(F.upper(F.col("NTA")).isin(nta_codes))
+
+        # General text search
         else:
-            # Broad search: name, street, borough, cuisine
             filtered = filtered.filter(
-                F.upper(F.col("DBA")).contains(search) |
-                F.upper(F.col("STREET")).contains(search) |
-                F.upper(F.col("BORO")).contains(search) |
-                F.upper(F.col("CUISINE DESCRIPTION")).contains(search)
+                F.upper(F.col("DBA")).contains(search_upper) |
+                F.upper(F.col("STREET")).contains(search_upper) |
+                F.upper(F.col("BORO")).contains(search_upper) |
+                F.upper(F.col("CUISINE DESCRIPTION")).contains(search_upper)
             )
+    else:
+        search_interpreted_as_neighborhood = False
 
     #  implement neighborhood and zip filter if needed
     # if neighborhood:
@@ -304,59 +341,66 @@ def view_restaurants():
 
 @app.route("/restaurant/<camis>")
 def restaurant_detail(camis):
+    import math
+    import datetime
     from pyspark.sql import functions as F
-    import math, datetime
 
     try:
-        # --- Match record by CAMIS ---
+        # ---------------------------------------------
+        # 1. FETCH RESTAURANT USING LATEST_GRADE COLUMN
+        # ---------------------------------------------
         restaurant_df = (
             df.filter(F.col("CAMIS") == int(camis))
               .select(
-                  "CAMIS", "DBA", "BORO", "BUILDING", "STREET", "ZIPCODE", "PHONE",
-                  "CUISINE DESCRIPTION", "GRADE", "GRADE DATE",
-                  "Latitude", "Longitude", "VIOLATIONS"
+                  "CAMIS",
+                  "DBA",
+                  "BORO",
+                  "BUILDING",
+                  "STREET",
+                  "ZIPCODE",
+                  "PHONE",
+                  "CUISINE DESCRIPTION",
+                  F.col("LATEST_GRADE").alias("GRADE"),   # ⭐ ALWAYS USE COMPUTED LATEST GRADE
+                  "GRADE DATE",
+                  "Latitude",
+                  "Longitude",
+                  "VIOLATIONS"
               )
               .limit(1)
               .toPandas()
         )
 
-        # --- Handle missing data ---
         if restaurant_df.empty:
             print(f"[WARN] No restaurant found for CAMIS {camis}")
             return render_template("restaurant_detail.html", restaurant=None)
 
         restaurant = restaurant_df.to_dict(orient="records")[0]
 
-        # --- Extract latest inspection from nested VIOLATIONS ---
-        violations = restaurant.get("VIOLATIONS", [])
-        latest_inspection = None
+        # -------------------------------------------------------
+        # 2. FALLBACK: if LATEST_GRADE missing, try violation list
+        # -------------------------------------------------------
+        if not restaurant.get("GRADE"):
+            violations = restaurant.get("VIOLATIONS") or []
+            latest = None
 
-        if violations and isinstance(violations, list):
-            valid_inspections = [
-                v for v in violations
-                if isinstance(v, dict) and v.get("INSPECTION DATE") is not None
-            ]
-            if valid_inspections:
-                latest_inspection = sorted(
-                    valid_inspections,
-                    key=lambda x: x.get("INSPECTION DATE") or "",
-                    reverse=True
-                )[0]
+            for v in violations:
+                if isinstance(v, dict) and v.get("GRADE"):
+                    if latest is None or (v.get("GRADE DATE") or "") > (latest.get("GRADE DATE") or ""):
+                        latest = v
 
-        # --- Merge latest inspection fields ---
-        if latest_inspection:
-            for field in [
-                "INSPECTION DATE", "INSPECTION TYPE", "ACTION",
-                "SCORE", "CRITICAL FLAG", "GRADE", "GRADE DATE"
-            ]:
-                if field in latest_inspection and latest_inspection[field] is not None:
-                    restaurant[field] = latest_inspection[field]
+            if latest:
+                restaurant["GRADE"] = latest.get("GRADE")
 
-        # --- Use latest grade if available ---
-        if latest_inspection and latest_inspection.get("GRADE"):
-            restaurant["GRADE"] = latest_inspection["GRADE"]
+        # -------------------------------------------------------
+        # 3. CLEAN GRADE VALUE
+        # -------------------------------------------------------
+        raw_grade = restaurant.get("GRADE")
+        grade_val = (raw_grade if raw_grade and isinstance(raw_grade, str) else "N/A").upper()
+        restaurant["GRADE"] = grade_val
 
-        # --- Data sanitization ---
+        # -------------------------------------------------------
+        # 4. CLEAN OTHER FIELD TYPES
+        # -------------------------------------------------------
         def clean(v):
             if v is None or (isinstance(v, float) and math.isnan(v)):
                 return None
@@ -366,19 +410,20 @@ def restaurant_detail(camis):
 
         restaurant = {k: clean(v) for k, v in restaurant.items()}
 
-        # --- Grade image selection ---
-        grade_val = restaurant.get("GRADE", "N/A")
+        # -------------------------------------------------------
+        # 5. SELECT CONSISTENT IMAGE
+        # -------------------------------------------------------
         grade_map = {
             "A": "A.jpeg",
             "B": "B.jpeg",
             "C": "C.jpeg",
             "Z": "pending.jpeg",
-            "N/A": "pending.jpeg",
-            None: "pending.jpeg"
+            "N/A": "pending.jpeg"
         }
-        grade_img = grade_map.get(str(grade_val).upper(), "pending.jpeg")
 
-        print(f"[INFO] Displaying details for {restaurant.get('DBA')} ({camis}) - Grade: {grade_val}")
+        grade_img = grade_map.get(grade_val, "pending.jpeg")
+
+        print(f"[INFO] Restaurant {camis} → Grade: {grade_val}")
 
         return render_template(
             "restaurant_detail.html",

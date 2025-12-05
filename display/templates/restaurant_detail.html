@@ -131,7 +131,7 @@
         <h2 class="restaurant-title">{{ restaurant["DBA"] }}</h2>
         <div class="grade-stamp text-center">
           <img src="{{ url_for('static', filename=grade_img) }}" alt="Grade Stamp">
-          <p>Grade: {{ restaurant["GRADE"] or "N/A" }}</p>
+          <p>Grade: {{ restaurant["LATEST GRADE"] or "N/A" }}</p>
         </div>
       </div>
 
